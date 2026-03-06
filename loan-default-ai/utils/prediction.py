@@ -159,6 +159,72 @@ def get_feature_importances(model, data=None):
         "Monthly Income": 0.01
     }
 
+def generate_loan_decision(
+    risk_percent,
+    credit_score,
+    debt_to_income,
+    credit_utilization,
+    late_payments,
+    monthly_income,
+    loan_amount,
+    profession,
+    interest_rate
+):
+    """
+    AI Loan Decision Engine logic to determine approval status.
+    Returns: {decision, explanation, actions}
+    """
+    # 1. REJECT LOAN
+    if risk_percent > 70 or credit_score < 600 or debt_to_income > 0.5 or late_payments > 2:
+        return {
+            "decision": "REJECT LOAN",
+            "explanation": "Borrower shows high probability of default due to weak credit history or excessive debt burden.",
+            "actions": [
+                "Improve CIBIL score above 650",
+                "Reduce existing debt obligations",
+                "Reapply after 6 months of timely payments"
+            ],
+            "color": "#e74c3c" # Red
+        }
+
+    # 2. APPROVE
+    if risk_percent < 30 and credit_score > 700 and debt_to_income < 0.35 and late_payments == 0:
+        return {
+            "decision": "APPROVE LOAN",
+            "explanation": "Borrower has a strong credit profile and stable financial indicators.",
+            "actions": [
+                "Standard interest rate applies",
+                "Normal loan terms and tenure"
+            ],
+            "color": "#2ecc71" # Green
+        }
+
+    # 3. RENEGOTIATE LOAN TERMS
+    # High loan amount relative to income (e.g. Loan > 4x Annual Income)
+    if (risk_percent >= 50 and risk_percent <= 70) or (loan_amount > (monthly_income * 12 * 4)):
+        return {
+            "decision": "RENEGOTIATE LOAN",
+            "explanation": "Loan amount is high relative to income or risk is elevated. Adjustments required.",
+            "actions": [
+                "Reduce requested loan amount",
+                "Extend loan tenure to reduce EMI burden",
+                "Increase interest rate by 1.5%"
+            ],
+            "color": "#e67e22" # Orange
+        }
+
+    # 4. APPROVE WITH CONDITIONS (Default for moderate cases)
+    return {
+        "decision": "APPROVE WITH CONDITIONS",
+        "explanation": "Borrower meets basic criteria but shows moderate risk indicators.",
+        "actions": [
+            "Increase interest rate slightly (+0.5% - 1.0%)",
+            "Require additional income verification",
+            "Reduce loan tenure to a maximum of 3 years"
+        ],
+        "color": "#f1c40f" # Yellow
+    }
+
 def generate_recommendations(probability, profession, monthly_income, loan_amount, tenure_years):
     """Generate recommendations based on risk features and profile."""
     base_rate = get_profession_base_rate(profession)

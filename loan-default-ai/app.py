@@ -7,7 +7,7 @@ import importlib
 import utils.prediction
 importlib.reload(utils.prediction)
 
-from utils.prediction import load_model, generate_risk_summary, generate_recommendations, get_risk_adjustment, predict_default_probability, get_feature_importances
+from utils.prediction import load_model, generate_risk_summary, generate_recommendations, get_risk_adjustment, predict_default_probability, get_feature_importances, generate_loan_decision
 
 st.set_page_config(layout="wide", page_title="AI Loan Default Intelligence System")
 
@@ -330,6 +330,19 @@ col_bottom1, col_bottom2 = st.columns([1.8, 1])
 summary_text = generate_risk_summary(st.session_state.risk_percent / 100, debt_to_income, credit_utilization, late_payments)
 rec_title, rec_bullets, final_rate, final_emi = generate_recommendations(st.session_state.risk_percent / 100, profession, monthly_income, loan_amount, loan_tenure)
 
+# AI Loan Decision Engine Call
+decision_obj = generate_loan_decision(
+    st.session_state.risk_percent,
+    credit_score,
+    debt_to_income,
+    credit_utilization,
+    late_payments,
+    monthly_income,
+    loan_amount,
+    profession,
+    final_rate
+)
+
 with col_bottom1:
     with st.container(border=True):
         st.markdown("<h3>🤖 AI Risk Summary</h3>", unsafe_allow_html=True)
@@ -345,21 +358,25 @@ with col_bottom2:
     with st.container(border=True):
         st.markdown("<h3>📋 Recommendation</h3>", unsafe_allow_html=True)
         
-        bullets_html = "".join([f"<li>{b}</li>" for b in rec_bullets])
+        # Action bullets for the structured decision
+        actions_html = "".join([f"<li>{a}</li>" for a in decision_obj['actions']])
         
         st.markdown(f"""
-        <div style="background-color: #f8fafc; padding: 1rem; border-radius: 6px; border-left: 4px solid #3b82f6;">
-            <div style="font-weight: 600; font-size: 1.1rem; color: #1e3a8a; margin-bottom: 0.8rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.5rem;">
-                {rec_title}
-            </div>
-            <div style="margin-bottom: 1rem; font-size: 0.9rem;">
-                <div class="info-row"><span>Interest Rate:</span> <span class="info-value">{final_rate:.2f}%</span></div>
-                <div class="info-row"><span>EMI:</span> <span class="info-value">₹{final_emi:,.2f}</span></div>
-                <div class="info-row"><span>Tenure:</span> <span class="info-value">{loan_tenure} Years</span></div>
-                <div class="info-row"><span>Risk Score:</span> <span class="info-value">{st.session_state.risk_percent}%</span></div>
-            </div>
-            <ul style="color: #374151; padding-left: 20px; font-size: 0.95rem; line-height: 1.6; margin-bottom: 0;">
-                {bullets_html}
-            </ul>
-        </div>
-        """, unsafe_allow_html=True)
+<div style="background-color: {decision_obj['color']}15; padding: 1rem; border-radius: 6px; border-left: 5px solid {decision_obj['color']};">
+<div style="font-weight: 700; font-size: 1.2rem; color: {decision_obj['color']}; margin-bottom: 0.5rem; text-transform: uppercase;">
+{decision_obj['decision']}
+</div>
+<div style="color: #1e3a8a; font-weight: 600; margin-bottom: 0.8rem; font-size: 0.95rem;">
+{decision_obj['explanation']}
+</div>
+<div style="background-color: white; padding: 0.8rem; border-radius: 4px; border: 1px solid #e2e8f0; margin-bottom: 1rem; font-size: 0.9rem;">
+<div class="info-row"><span>Interest Rate:</span> <span class="info-value" style="color: {decision_obj['color']}; font-weight: 700;">{final_rate:.2f}%</span></div>
+<div class="info-row"><span>Monthly EMI:</span> <span class="info-value">₹{final_emi:,.2f}</span></div>
+<div class="info-row"><span>Risk Score:</span> <span class="info-value">{st.session_state.risk_percent}%</span></div>
+</div>
+<div style="font-weight: 600; font-size: 0.9rem; color: #4b5563; margin-bottom: 0.4rem;">Suggested Actions:</div>
+<ul style="color: #374151; padding-left: 20px; font-size: 0.9rem; line-height: 1.5; margin-bottom: 0;">
+{actions_html}
+</ul>
+</div>
+""", unsafe_allow_html=True)
