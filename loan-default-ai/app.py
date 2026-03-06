@@ -327,7 +327,15 @@ st.write("")
 
 col_bottom1, col_bottom2 = st.columns([1.8, 1])
 
-summary_text = generate_risk_summary(st.session_state.risk_percent / 100, debt_to_income, credit_utilization, late_payments)
+risk_summary = generate_risk_summary(
+    credit_score,
+    debt_to_income,
+    credit_utilization,
+    late_payments,
+    monthly_income,
+    loan_amount,
+    st.session_state.risk_percent
+)
 rec_title, rec_bullets, final_rate, final_emi = generate_recommendations(st.session_state.risk_percent / 100, profession, monthly_income, loan_amount, loan_tenure)
 
 # AI Loan Decision Engine Call
@@ -346,13 +354,42 @@ decision_obj = generate_loan_decision(
 with col_bottom1:
     with st.container(border=True):
         st.markdown("<h3>🤖 AI Risk Summary</h3>", unsafe_allow_html=True)
+
+        # Risk category badge color
+        cat = risk_summary["risk_category"]
+        cat_color = "#27ae60" if cat == "Low Risk" else "#f39c12" if cat == "Moderate Risk" else "#e74c3c"
+
+        # Build positive/risk driver bullet HTML
+        pos_items = "".join([
+            f'<li style="margin-bottom:0.25rem;">{f}</li>'
+            for f in risk_summary["positive_factors"]
+        ]) or "<li>None identified</li>"
+
+        risk_items = "".join([
+            f'<li style="margin-bottom:0.25rem;">{f}</li>'
+            for f in risk_summary["risk_factors"]
+        ]) or "<li>No significant risk drivers detected</li>"
+
         st.markdown(f"""
-        <div style="background-color: #f8fafc; padding: 1.2rem; border-radius: 6px; border-left: 4px solid #3b82f6;">
-            <p style="color: #374151; line-height: 1.6; margin-bottom: 0;">
-                {summary_text}
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
+<div style="background:#f8fafc;border-left:4px solid {cat_color};border-radius:6px;padding:1rem 1.2rem;margin-bottom:0.8rem;">
+<div style="display:inline-block;background:{cat_color}22;color:{cat_color};font-weight:700;font-size:0.82rem;padding:0.2rem 0.7rem;border-radius:12px;border:1px solid {cat_color};margin-bottom:0.6rem;">{cat}</div>
+<p style="color:#374151;line-height:1.7;margin:0;font-size:0.92rem;">{risk_summary["summary"]}</p>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;margin-top:0.2rem;">
+<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:0.8rem;">
+<div style="font-weight:700;color:#15803d;font-size:0.85rem;margin-bottom:0.4rem;">✅ Positive Indicators</div>
+<ul style="color:#166534;font-size:0.84rem;padding-left:16px;margin:0;line-height:1.6;">
+{pos_items}
+</ul>
+</div>
+<div style="background:#fff5f5;border:1px solid #fca5a5;border-radius:6px;padding:0.8rem;">
+<div style="font-weight:700;color:#b91c1c;font-size:0.85rem;margin-bottom:0.4rem;">⚠️ Risk Drivers</div>
+<ul style="color:#7f1d1d;font-size:0.84rem;padding-left:16px;margin:0;line-height:1.6;">
+{risk_items}
+</ul>
+</div>
+</div>
+""", unsafe_allow_html=True)
 
 with col_bottom2:
     with st.container(border=True):

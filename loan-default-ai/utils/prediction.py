@@ -287,10 +287,95 @@ def generate_recommendations(probability, profession, monthly_income, loan_amoun
             f"EMI set at ₹{emi:,.2f}"
         ], final_rate, emi
 
-def generate_risk_summary(probability, debt_to_income, credit_utilization, late_payments):
-    if probability >= 0.6:
-        return "The AI analysis indicates a high likelihood of default due to a relatively high debt-to-income ratio, moderate credit utilization, and recent late payment history. The borrower may face repayment pressure if financial conditions change."
-    elif probability >= 0.3:
-        return "The AI analysis indicates a moderate likelihood of default. Some risk factors are elevated but within manageable thresholds with appropriate banking conditions."
+def generate_risk_summary(
+    credit_score,
+    debt_to_income,
+    credit_utilization,
+    late_payments,
+    monthly_income,
+    loan_amount,
+    risk_percent
+):
+    """
+    Dynamic AI Risk Analysis Engine.
+    Analyzes borrower data and returns a structured risk summary.
+    Returns: {risk_category, summary, positive_factors, risk_factors}
+    """
+
+    # ── Risk Category ───────────────────────────────────────────────
+    if risk_percent < 30:
+        risk_category = "Low Risk"
+    elif risk_percent < 60:
+        risk_category = "Moderate Risk"
     else:
-        return "The AI analysis indicates a low likelihood of default. The applicant has strong financials and a solid payment history, qualifying for premium rates."
+        risk_category = "High Risk"
+
+    # ── Identify Risk Drivers ────────────────────────────────────────
+    risk_factors = []
+    if credit_score < 650:
+        risk_factors.append(f"Low CIBIL score ({credit_score})")
+    if debt_to_income > 0.4:
+        risk_factors.append(f"High debt-to-income ratio ({debt_to_income*100:.0f}%)")
+    if credit_utilization > 0.6:
+        risk_factors.append(f"High credit utilization ({credit_utilization*100:.0f}%)")
+    if late_payments >= 2:
+        risk_factors.append(f"History of late payments ({late_payments} missed)")
+    elif late_payments == 1:
+        risk_factors.append("1 late payment on record")
+    if loan_amount > monthly_income * 12:
+        risk_factors.append("Loan amount exceeds annual income")
+    if debt_to_income > 0.5:
+        risk_factors.append("Debt obligations are unsustainably high")
+
+    # ── Identify Positive Indicators ─────────────────────────────────
+    positive_factors = []
+    if credit_score > 720:
+        positive_factors.append(f"Strong CIBIL score ({credit_score})")
+    elif credit_score > 680:
+        positive_factors.append(f"Good CIBIL score ({credit_score})")
+    if debt_to_income < 0.3:
+        positive_factors.append(f"Healthy debt-to-income ratio ({debt_to_income*100:.0f}%)")
+    if credit_utilization < 0.3:
+        positive_factors.append(f"Low credit utilization ({credit_utilization*100:.0f}%)")
+    if late_payments == 0:
+        positive_factors.append("Clean repayment history (0 late payments)")
+    if monthly_income >= 100000:
+        positive_factors.append(f"High monthly income (₹{monthly_income:,.0f})")
+    elif monthly_income >= 60000:
+        positive_factors.append(f"Stable monthly income (₹{monthly_income:,.0f})")
+
+    # ── Build Narrative Summary ──────────────────────────────────────
+    repayment_capacity = (
+        "stable and well within acceptable thresholds"
+        if risk_percent < 30 else
+        "moderate — manageable with appropriate loan conditions"
+        if risk_percent < 60 else
+        "high-risk and requires significant improvement before loan sanction"
+    )
+
+    pos_text = (
+        f"Positive indicators include: {'; '.join(positive_factors)}."
+        if positive_factors else
+        "No strong positive indicators were identified."
+    )
+    risk_text = (
+        f"Risk factors identified: {'; '.join(risk_factors)}."
+        if risk_factors else
+        "No significant risk factors were detected."
+    )
+
+    summary = (
+        f"The AI model predicts a **{risk_category}** profile with a "
+        f"default probability of **{risk_percent}%**. "
+        f"{pos_text} "
+        f"{risk_text} "
+        f"Based on these financial indicators, the borrower's repayment "
+        f"capacity appears **{repayment_capacity}**."
+    )
+
+    return {
+        "risk_category": risk_category,
+        "summary": summary,
+        "positive_factors": positive_factors,
+        "risk_factors": risk_factors,
+    }
