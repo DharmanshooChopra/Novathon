@@ -64,6 +64,57 @@ def get_risk_level(probability):
     else:
         return "High Risk", "red"
 
+def get_profession_base_rate(profession):
+    """Returns the base interest rate for a given profession."""
+    rates = {
+        "Government Employee": 9.5,
+        "PSU Employee": 9.7,
+        "Banking Professional": 10.0,
+        "IT / Software Engineer": 10.2,
+        "Doctor / Medical Professional": 10.4,
+        "Chartered Accountant / Lawyer": 10.8,
+        "Teacher / Professor": 11.0,
+        "Business Owner": 12.5,
+        "Freelancer / Self-Employed": 13.5,
+        "Student / New Job": 14.5,
+        "Other": 12.0
+    }
+    return rates.get(profession, 12.0)
+
+def get_salary_adjustment(monthly_income):
+    """Returns the interest rate adjustment based on monthly income."""
+    if monthly_income >= 150000:
+        return 0.0
+    elif monthly_income >= 80000:
+        return 0.5
+    elif monthly_income >= 50000:
+        return 1.0
+    else:
+        return 1.5
+
+def get_risk_adjustment(probability):
+    """Returns the interest rate adjustment based on AI risk score."""
+    if probability < 0.3:
+        return -0.5, "Approve"
+    elif probability < 0.6:
+        return 1.0, "Approve with Conditions"
+    else:
+        return 2.0, "High Risk"
+
+def calculate_emi(principal, annual_interest_rate, tenure_years):
+    """Calculates Equated Monthly Installment (EMI)."""
+    if annual_interest_rate == 0:
+        return principal / (tenure_years * 12) if tenure_years > 0 else 0
+    
+    r = (annual_interest_rate / 100) / 12
+    n = tenure_years * 12
+    
+    if n == 0:
+        return principal
+        
+    emi = (principal * r * (1 + r)**n) / ((1 + r)**n - 1)
+    return emi
+
 def get_feature_importances(model):
     """Returns dummy feature importances to match the dashboard view."""
     return {
@@ -72,32 +123,41 @@ def get_feature_importances(model):
         "Late Payments": 0.22
     }
 
-def generate_recommendations(probability, debt_to_income, credit_utilization, late_payments):
-    """Generate recommendations based on risk features."""
-    if probability >= 0.6:
-        return "Approve with Conditions", [
-            "Reduce loan amount to ₹6,00,000",
-            "Increase interest rate to 11.5%",
-            "Require income verification",
-            "Suggest EMI tenure of 3 years"
-        ]
-    elif probability >= 0.3:
-        return "Approve with Conditions", [
-            "Increase interest rate to 9.5%",
-            "Require a co-signer",
-            "Reduce loan term to 3 years"
-        ]
+def generate_recommendations(probability, profession, monthly_income, loan_amount, tenure_years):
+    """Generate recommendations based on risk features and profile."""
+    base_rate = get_profession_base_rate(profession)
+    salary_adj = get_salary_adjustment(monthly_income)
+    risk_adj, decision = get_risk_adjustment(probability)
+    
+    final_rate = base_rate + salary_adj + risk_adj
+    emi = calculate_emi(loan_amount, final_rate, tenure_years)
+    
+    if decision == "High Risk":
+        return decision, [
+            f"Likely Rejection due to High Risk ({probability*100:.1f}%)",
+            "Consider reducing loan amount significantly",
+            "Improve CIBIL score before reapplying",
+            "Provide additional collateral"
+        ], final_rate, emi
+    elif decision == "Approve with Conditions":
+        return decision, [
+            f"Increase monitoring due to Moderate Risk",
+            f"Interest adjusted to {final_rate:.2f}%",
+            "Require co-signer or guarantor",
+            f"Suggested EMI: ₹{emi:,.2f}"
+        ], final_rate, emi
     else:
-        return "Approve", [
-            "Approve standard loan.",
-            "Valid for lowest interest rate tier.",
-            "No additional conditions required."
-        ]
+        return decision, [
+            "Excellent profile for standard approval",
+            f"Premium interest rate of {final_rate:.2f}% offered",
+            "No additional collateral required",
+            f"EMI set at ₹{emi:,.2f}"
+        ], final_rate, emi
 
 def generate_risk_summary(probability, debt_to_income, credit_utilization, late_payments):
     if probability >= 0.6:
         return "The AI analysis indicates a high likelihood of default due to a relatively high debt-to-income ratio, moderate credit utilization, and recent late payment history. The borrower may face repayment pressure if financial conditions change."
     elif probability >= 0.3:
-        return "The AI analysis indicates a moderate likelihood of default. Some risk factors are elevated but within manageable thresholds with appropriate conditions."
+        return "The AI analysis indicates a moderate likelihood of default. Some risk factors are elevated but within manageable thresholds with appropriate banking conditions."
     else:
-        return "The AI analysis indicates a low likelihood of default. The applicant has strong financials and a solid payment history."
+        return "The AI analysis indicates a low likelihood of default. The applicant has strong financials and a solid payment history, qualifying for premium rates."
