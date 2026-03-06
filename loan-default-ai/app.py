@@ -357,26 +357,31 @@ with col_bottom1:
 with col_bottom2:
     with st.container(border=True):
         st.markdown("<h3>📋 Recommendation</h3>", unsafe_allow_html=True)
-        
-        # Action bullets for the structured decision
-        actions_html = "".join([f"<li>{a}</li>" for a in decision_obj['actions']])
-        
+
+        # Build bullet list HTML for suggested actions
+        actions_html = "".join([f"<li>{a}</li>" for a in decision_obj["actions"]])
+
+        # Decision badge background (light tint of decision color)
+        badge_bg = decision_obj["color"] + "22"
+
         st.markdown(f"""
-<div style="background-color: {decision_obj['color']}15; padding: 1rem; border-radius: 6px; border-left: 5px solid {decision_obj['color']};">
-<div style="font-weight: 700; font-size: 1.2rem; color: {decision_obj['color']}; margin-bottom: 0.5rem; text-transform: uppercase;">
-{decision_obj['decision']}
+<div style="background-color:{decision_obj['color']}11;border-left:5px solid {decision_obj['color']};border-radius:8px;padding:1rem 1.2rem;">
+<div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.6rem;">
+<span style="background:{badge_bg};color:{decision_obj['color']};font-weight:700;font-size:1.05rem;padding:0.3rem 0.8rem;border-radius:20px;border:1.5px solid {decision_obj['color']};letter-spacing:0.5px;">
+{decision_obj["decision"]}
+</span>
 </div>
-<div style="color: #1e3a8a; font-weight: 600; margin-bottom: 0.8rem; font-size: 0.95rem;">
-{decision_obj['explanation']}
+<p style="color:#1e3a8a;font-weight:600;font-size:0.92rem;margin:0 0 0.9rem 0;">{decision_obj["explanation"]}</p>
+<div style="background:white;border-radius:6px;border:1px solid #e2e8f0;padding:0.7rem 0.9rem;margin-bottom:0.9rem;font-size:0.88rem;">
+<div style="display:flex;justify-content:space-between;padding:0.25rem 0;border-bottom:1px solid #f1f5f9;"><span style="color:#6b7280;">Loan Type</span><span style="font-weight:600;color:#111827;">{loan_type}</span></div>
+<div style="display:flex;justify-content:space-between;padding:0.25rem 0;border-bottom:1px solid #f1f5f9;"><span style="color:#6b7280;">Interest Rate</span><span style="font-weight:700;color:{decision_obj['color']};">{final_rate:.2f}%</span></div>
+<div style="display:flex;justify-content:space-between;padding:0.25rem 0;border-bottom:1px solid #f1f5f9;"><span style="color:#6b7280;">Monthly EMI</span><span style="font-weight:600;color:#111827;">₹{final_emi:,.2f}</span></div>
+<div style="display:flex;justify-content:space-between;padding:0.25rem 0;"><span style="color:#6b7280;">Risk Score</span><span style="font-weight:600;color:{st.session_state.risk_color};">{st.session_state.risk_percent}%</span></div>
 </div>
-<div style="background-color: white; padding: 0.8rem; border-radius: 4px; border: 1px solid #e2e8f0; margin-bottom: 1rem; font-size: 0.9rem;">
-<div class="info-row"><span>Interest Rate:</span> <span class="info-value" style="color: {decision_obj['color']}; font-weight: 700;">{final_rate:.2f}%</span></div>
-<div class="info-row"><span>Monthly EMI:</span> <span class="info-value">₹{final_emi:,.2f}</span></div>
-<div class="info-row"><span>Risk Score:</span> <span class="info-value">{st.session_state.risk_percent}%</span></div>
-</div>
-<div style="font-weight: 600; font-size: 0.9rem; color: #4b5563; margin-bottom: 0.4rem;">Suggested Actions:</div>
-<ul style="color: #374151; padding-left: 20px; font-size: 0.9rem; line-height: 1.5; margin-bottom: 0;">
+<div style="font-weight:600;font-size:0.87rem;color:#374151;margin-bottom:0.35rem;">📌 Suggested Actions</div>
+<ul style="color:#374151;padding-left:18px;font-size:0.88rem;line-height:1.7;margin:0;">
 {actions_html}
 </ul>
 </div>
 """, unsafe_allow_html=True)
+

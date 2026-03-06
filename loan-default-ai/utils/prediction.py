@@ -171,58 +171,89 @@ def generate_loan_decision(
     interest_rate
 ):
     """
-    AI Loan Decision Engine logic to determine approval status.
-    Returns: {decision, explanation, actions}
+    AI Loan Decision Engine: evaluates borrower profile and returns
+    a structured decision with explanation and suggested actions.
+    Returns: {"decision", "explanation", "actions", "color"}
     """
-    # 1. REJECT LOAN
-    if risk_percent > 70 or credit_score < 600 or debt_to_income > 0.5 or late_payments > 2:
+
+    # ── 1. REJECT LOAN ──────────────────────────────────────────────
+    # Triggered by any one of: very high risk, poor CIBIL, excessive DTI,
+    # or multiple (>1) late payments.
+    if (
+        risk_percent > 70
+        or credit_score < 600
+        or debt_to_income > 0.5
+        or late_payments > 1
+    ):
         return {
             "decision": "REJECT LOAN",
-            "explanation": "Borrower shows high probability of default due to weak credit history or excessive debt burden.",
+            "explanation": (
+                "The applicant has a high debt burden and a weak credit score "
+                "which significantly increases the risk of default."
+            ),
             "actions": [
-                "Improve CIBIL score above 650",
-                "Reduce existing debt obligations",
-                "Reapply after 6 months of timely payments"
+                "Improve CIBIL score to at least 650",
+                "Clear existing overdue debts",
+                "Reduce total monthly debt obligations",
+                "Reapply after 6 months of clean payment history",
             ],
-            "color": "#e74c3c" # Red
+            "color": "#e74c3c",  # Red
         }
 
-    # 2. APPROVE
-    if risk_percent < 30 and credit_score > 700 and debt_to_income < 0.35 and late_payments == 0:
+    # ── 2. APPROVE LOAN ─────────────────────────────────────────────
+    # All green indicators: low risk, strong CIBIL, healthy DTI, zero late payments.
+    if (
+        risk_percent < 30
+        and credit_score > 700
+        and debt_to_income < 0.35
+        and late_payments == 0
+    ):
         return {
             "decision": "APPROVE LOAN",
-            "explanation": "Borrower has a strong credit profile and stable financial indicators.",
+            "explanation": (
+                "The borrower has a strong credit history, manageable debt "
+                "obligations, and stable income."
+            ),
             "actions": [
                 "Standard interest rate applies",
-                "Normal loan terms and tenure"
+                "Normal loan terms and tenure",
+                "No additional collateral required",
             ],
-            "color": "#2ecc71" # Green
+            "color": "#27ae60",  # Green
         }
 
-    # 3. RENEGOTIATE LOAN TERMS
-    # High loan amount relative to income (e.g. Loan > 4x Annual Income)
-    if (risk_percent >= 50 and risk_percent <= 70) or (loan_amount > (monthly_income * 12 * 4)):
+    # ── 3. RENEGOTIATE LOAN TERMS ───────────────────────────────────
+    # Elevated risk band (50-70%) OR loan amount > 4× annual income.
+    if (50 <= risk_percent <= 70) or (loan_amount > monthly_income * 12 * 4):
         return {
             "decision": "RENEGOTIATE LOAN",
-            "explanation": "Loan amount is high relative to income or risk is elevated. Adjustments required.",
+            "explanation": (
+                "Loan amount is high relative to income or risk is moderately "
+                "elevated. Structural adjustments to the loan are required."
+            ),
             "actions": [
                 "Reduce requested loan amount",
-                "Extend loan tenure to reduce EMI burden",
-                "Increase interest rate by 1.5%"
+                "Extend loan tenure to lower monthly EMI",
+                "Increase interest rate by 1.5%",
+                "Provide additional income proof or co-applicant",
             ],
-            "color": "#e67e22" # Orange
+            "color": "#e67e22",  # Orange
         }
 
-    # 4. APPROVE WITH CONDITIONS (Default for moderate cases)
+    # ── 4. APPROVE WITH CONDITIONS ──────────────────────────────────
+    # Default for moderate-risk cases (risk 30-60, CIBIL 650-700, DTI 0.35-0.45).
     return {
         "decision": "APPROVE WITH CONDITIONS",
-        "explanation": "Borrower meets basic criteria but shows moderate risk indicators.",
+        "explanation": (
+            "Borrower meets basic eligibility criteria but shows moderate risk "
+            "indicators. Conditional approval with adjustments."
+        ),
         "actions": [
-            "Increase interest rate slightly (+0.5% - 1.0%)",
-            "Require additional income verification",
-            "Reduce loan tenure to a maximum of 3 years"
+            "Increase interest rate slightly (+0.5% – 1.0%)",
+            "Require additional income / employment verification",
+            "Reduce loan tenure to a maximum of 3 years",
         ],
-        "color": "#f1c40f" # Yellow
+        "color": "#f39c12",  # Amber/Yellow
     }
 
 def generate_recommendations(probability, profession, monthly_income, loan_amount, tenure_years):
