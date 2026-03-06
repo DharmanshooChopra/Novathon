@@ -7,7 +7,7 @@ import importlib
 import utils.prediction
 importlib.reload(utils.prediction)
 
-from utils.prediction import load_model
+from utils.prediction import load_model, generate_risk_summary, generate_recommendations, get_risk_adjustment, predict_default_probability, get_feature_importances
 
 st.set_page_config(layout="wide", page_title="AI Loan Default Intelligence System")
 
@@ -132,11 +132,12 @@ if "risk_color" not in st.session_state:
     st.session_state.risk_color = "#f1c40f"
 if "risk_adjustment" not in st.session_state:
     st.session_state.risk_adjustment = 0.0
+if "feature_importances" not in st.session_state:
+    st.session_state.feature_importances = get_feature_importances(model)
 if "prediction_run" not in st.session_state:
     st.session_state.prediction_run = False
     
 if predict_button:
-    from utils.prediction import predict_default_probability, get_risk_adjustment
     
     # Get raw probability
     raw_prob = predict_default_probability(model, credit_score, debt_to_income, credit_utilization, late_payments, loan_amount, monthly_income)
@@ -148,6 +149,17 @@ if predict_button:
     # Update risk adjustment in session state
     risk_adj, _ = get_risk_adjustment(st.session_state.risk_percent / 100)
     st.session_state.risk_adjustment = risk_adj
+    
+    # Update dynamic feature importance
+    current_data = {
+        'credit_score': credit_score,
+        'debt_to_income': debt_to_income,
+        'credit_utilization': credit_utilization,
+        'late_payments': late_payments,
+        'loan_amount': loan_amount,
+        'monthly_income': monthly_income
+    }
+    st.session_state.feature_importances = get_feature_importances(model, data=current_data)
     
     # Determine risk label and color based on the gauge ranges
     if st.session_state.risk_percent < 30:
@@ -259,13 +271,16 @@ with col3:
     with st.container(border=True):
         st.markdown("<h3>📈 Feature Importance</h3>", unsafe_allow_html=True)
         
-        from utils.prediction import get_feature_importances
-        importances = get_feature_importances(model)
+        # Use importance from session state
+        importances = st.session_state.feature_importances
         
         features_df = pd.DataFrame({
             'Feature': list(importances.keys()),
             'Importance': list(importances.values())
         })
+        
+        # Sort values: highest importance at the top for better visualization
+        features_df = features_df.sort_values(by='Importance', ascending=True)
         
         fig_bar = px.bar(
             features_df, 
@@ -277,16 +292,16 @@ with col3:
         
         fig_bar.update_traces(
             marker_color='#3b82f6', 
-            texttemplate='%{text:.2f}', 
+            texttemplate='%{text:.2%}', # Display as percentage
             textposition='outside',
             cliponaxis=False
         )
         
         fig_bar.update_layout(
-            height=250,
+            height=300, # Increased height to fit all 6 features
             margin=dict(l=10, r=40, t=20, b=10),
-            xaxis=dict(visible=False, range=[0, 0.45]),
-            yaxis=dict(title=None, categoryorder='array', categoryarray=['Late Payments', 'Credit Utilization', 'Debt-to-Income'], tickfont=dict(size=12, color='#4b5563')),
+            xaxis=dict(visible=False, range=[0, max(features_df['Importance']) * 1.2]),
+            yaxis=dict(title=None, tickfont=dict(size=12, color='#4b5563')),
             plot_bgcolor='rgba(0,0,0,0)',
             paper_bgcolor='rgba(0,0,0,0)',
             showlegend=False

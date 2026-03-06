@@ -115,12 +115,48 @@ def calculate_emi(principal, annual_interest_rate, tenure_years):
     emi = (principal * r * (1 + r)**n) / ((1 + r)**n - 1)
     return emi
 
-def get_feature_importances(model):
-    """Returns dummy feature importances to match the dashboard view."""
+def calculate_dynamic_importance(credit_score, debt_to_income, credit_utilization, late_payments, loan_amount, monthly_income):
+    """Calculates manual influence scores based on user input magnitude."""
+    # Using the user's specific fallback logic
+    importance = {
+        "Credit Score": max(0, (750 - credit_score) / 750),
+        "Debt-to-Income Ratio": min(1.0, debt_to_income),
+        "Credit Utilization": min(1.0, credit_utilization),
+        "Late Payments": min(1.0, late_payments / 10),
+        "Loan Amount": min(1.0, loan_amount / 1000000),
+        "Monthly Income": max(0, 1 - (monthly_income / 200000))
+    }
+    
+    # Normalize to ensure sum = 1.0 for the bar chart
+    total = sum(importance.values())
+    if total == 0:
+        return {k: 1.0/len(importance) for k in importance.keys()}
+        
+    return {k: v / total for k, v in importance.items()}
+
+def get_feature_importances(model, data=None):
+    """
+    Returns feature importances. If data is provided, calculates dynamic 
+    influence scores based on current inputs.
+    """
+    if data is not None:
+        return calculate_dynamic_importance(
+            data.get('credit_score', 680),
+            data.get('debt_to_income', 0.4),
+            data.get('credit_utilization', 0.5),
+            data.get('late_payments', 0),
+            data.get('loan_amount', 500000),
+            data.get('monthly_income', 50000)
+        )
+        
+    # Standard static importance if no specific data is provided
     return {
         "Debt-to-Income": 0.36,
         "Credit Utilization": 0.28,
-        "Late Payments": 0.22
+        "Late Payments": 0.22,
+        "Credit Score": 0.10,
+        "Loan Amount": 0.03,
+        "Monthly Income": 0.01
     }
 
 def generate_recommendations(probability, profession, monthly_income, loan_amount, tenure_years):
