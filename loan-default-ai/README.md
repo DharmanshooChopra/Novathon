@@ -3,12 +3,14 @@
 An interactive Streamlit-based banking dashboard designed for real-time loan default risk assessment using Machine Learning.
 
 ## 🚀 Features
-- **Interactive Simulation**: Sidebar widgets to input borrower demographics and loan details.
-- **Automated DTI Calculation**: Real-time EMI and Debt-to-Income (DTI) computation based on loan amount, interest rate, and tenure.
+- **Interest Rate Engine**: Dynamically calculates interest rates based on **Profession**, **Monthly Income**, and **AI Risk Score**.
+- **Automated EMI Calculation**: Real-time EMI and Debt-to-Income (DTI) computation using the standard amortization formula.
+- **3-Row Dashboard Layout**:
+    - **Row 1**: Profiles, Risk Gauges, and Feature Importance.
+    - **Row 2**: Document Verification Checklist.
+    - **Row 3**: AI Risk Summaries and Dynamic Recommendations.
 - **AI Risk Assessment**: Random Forest Classifier predicts default probability based on 6 key financial features.
-- **Dynamic Risk Summary**: AI-generated explanation of the risk level and borrower profile.
-- **Actionable Recommendations**: Banking-grade loan approval conditions based on predicted risk.
-- **Professional UI**: Clean, responsive banking theme with Plotly visualizations.
+- **Dynamic Recommendations**: Provides decision-making support (Approve/Reject) with final interest rates and EMI details.
 
 ## 📁 Project Structure
 ```
