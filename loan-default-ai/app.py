@@ -124,11 +124,16 @@ with st.sidebar:
     predict_button = st.button("Predict Default Risk", type="primary", use_container_width=True)
 
 # Application State Logic
+if "risk_percent" not in st.session_state:
+    st.session_state.risk_percent = 0
+if "risk_label" not in st.session_state:
+    st.session_state.risk_label = "🟡 MEDIUM RISK"
+if "risk_color" not in st.session_state:
+    st.session_state.risk_color = "#f1c40f"
+if "risk_adjustment" not in st.session_state:
+    st.session_state.risk_adjustment = 0.0
 if "prediction_run" not in st.session_state:
     st.session_state.prediction_run = False
-    st.session_state.prob = 64.0 # Default fallback
-    st.session_state.risk_label = "High Risk"
-    st.session_state.risk_color = "#ef4444"
     
 if predict_button:
     from utils.prediction import predict_default_probability, get_risk_adjustment
@@ -138,22 +143,22 @@ if predict_button:
     
     # Convert to percentage
     prob_pct = min(100.0, max(0.0, raw_prob * 100))
-    st.session_state.prob = round(prob_pct, 1)
+    st.session_state.risk_percent = int(prob_pct)
     
     # Update risk adjustment in session state
-    risk_adj, _ = get_risk_adjustment(st.session_state.prob / 100)
+    risk_adj, _ = get_risk_adjustment(st.session_state.risk_percent / 100)
     st.session_state.risk_adjustment = risk_adj
     
     # Determine risk label and color based on the gauge ranges
-    if prob_pct < 30:
-        st.session_state.risk_label = "Low Risk"
-        st.session_state.risk_color = "#22c55e"
-    elif prob_pct < 60:
-        st.session_state.risk_label = "Medium Risk"
-        st.session_state.risk_color = "#eab308"
+    if st.session_state.risk_percent < 30:
+        st.session_state.risk_label = "🟢 LOW RISK"
+        st.session_state.risk_color = "#2ecc71"
+    elif st.session_state.risk_percent < 60:
+        st.session_state.risk_label = "🟡 MEDIUM RISK"
+        st.session_state.risk_color = "#f1c40f"
     else:
-        st.session_state.risk_label = "High Risk"
-        st.session_state.risk_color = "#ef4444"
+        st.session_state.risk_label = "🔴 HIGH RISK"
+        st.session_state.risk_color = "#e74c3c"
         
     st.session_state.prediction_run = True
 
@@ -162,7 +167,7 @@ st.markdown("<h2 class='title-header'>🏦 AI Loan Default Intelligence System</
 st.write("") # Spacer before main columns
 st.write("") 
 
-col1, col2, col3 = st.columns([1, 1.8, 1.2])
+col1, col2, col3 = st.columns([1, 2.2, 1.2])
 
 with col1:
     with st.container(border=True):
@@ -195,44 +200,60 @@ with col1:
                 <span class="info-label">CIBIL Score</span>
                 <span class="info-value">{credit_score}</span>
             </div>
+            <hr style="margin: 0.5rem 0; border: 0; border-top: 1px solid #f3f4f6;">
+            <div class="info-row">
+                <span class="info-label">Risk Status</span>
+                <span class="info-value" style="color: {st.session_state.risk_color};">{st.session_state.risk_label}</span>
+            </div>
         </div>
         """, unsafe_allow_html=True)
 
 with col2:
     with st.container(border=True):
-        st.markdown("<h3 style='text-align: center; border-bottom: none;'>📊 Default Probability</h3>", unsafe_allow_html=True)
+        st.markdown(f"<h3 style='text-align: center; border-bottom: none;'>{st.session_state.risk_label}</h3>", unsafe_allow_html=True)
         
-        # Gauge Chart using session state for dynamics
+        # Professional Fintech Gauge Chart
+        risk_percent = st.session_state.risk_percent
+        
         fig_gauge = go.Figure(go.Indicator(
-            mode = "gauge+number",
-            value = st.session_state.prob,
-            title = {'text': st.session_state.risk_label, 'font': {'size': 20, 'color': st.session_state.risk_color}},
-            number = {'suffix': "%", 'font': {'size': 60, 'color': '#111827'}},
-            domain = {'x': [0, 1], 'y': [0, 1]},
+            mode = "gauge+number+delta",
+            value = risk_percent,
+            delta = {'reference': 50, 'increasing': {'color': "#e74c3c"}, 'decreasing': {'color': "#2ecc71"}},
             gauge = {
-                'axis': {'range': [None, 100], 'tickwidth': 1, 'tickcolor': "darkblue", 'visible': False},
-                'bar': {'color': "rgba(0,0,0,0)"},
+                'axis': {'range': [0, 100], 'tickwidth': 2, 'tickcolor': "#4b5563"},
+                'bar': {'color': "#1f77b4"},
                 'bgcolor': "white",
-                'borderwidth': 0,
+                'borderwidth': 2,
+                'bordercolor': "#e5e7eb",
                 'steps': [
-                    {'range': [0, 30], 'color': "#22c55e"}, # Green (Low Risk)
-                    {'range': [30, 60], 'color': "#eab308"}, # Yellow (Medium Risk)
-                    {'range': [60, 100], 'color': "#ef4444"}], # Red (High Risk)
+                    {'range': [0, 30], 'color': "#2ecc71"},   # Low Risk (Green)
+                    {'range': [30, 60], 'color': "#f1c40f"},  # Medium Risk (Yellow)
+                    {'range': [60, 100], 'color': "#e74c3c"}  # High Risk (Red)
+                ],
                 'threshold': {
-                    'line': {'color': "#111827", 'width': 4},
-                    'thickness': 0.75,
-                    'value': 68}
-            }
+                    'line': {'color': "black", 'width': 6},
+                    'thickness': 0.8,
+                    'value': risk_percent
+                }
+            },
+            number = {'suffix': "%", 'font': {'size': 50, 'color': '#111827'}}
         ))
         
         fig_gauge.update_layout(
             height=300, 
-            margin=dict(l=20, r=20, t=10, b=10),
-            font=dict(family="sans-serif"),
+            margin=dict(l=30, r=30, t=50, b=20),
+            font=dict(family="Arial", color="#1e3a8a"),
+            transition={'duration': 500}
         )
         
-        
         st.plotly_chart(fig_gauge, use_container_width=True, config={'displayModeBar': False})
+        
+        st.markdown(f"""
+        <div style="text-align: center; color: #4b5563; font-size: 0.9rem; margin-top: -10px;">
+            AI Risk Score: {risk_percent}% | 
+            <span style="color: {st.session_state.risk_color}; font-weight: 600;">{st.session_state.risk_label}</span>
+        </div>
+        """, unsafe_allow_html=True)
 
 with col3:
     with st.container(border=True):
@@ -291,9 +312,8 @@ st.write("")
 
 col_bottom1, col_bottom2 = st.columns([1.8, 1])
 
-from utils.prediction import generate_risk_summary, generate_recommendations
-summary_text = generate_risk_summary(st.session_state.prob / 100, debt_to_income, credit_utilization, late_payments)
-rec_title, rec_bullets, final_rate, final_emi = generate_recommendations(st.session_state.prob / 100, profession, monthly_income, loan_amount, loan_tenure)
+summary_text = generate_risk_summary(st.session_state.risk_percent / 100, debt_to_income, credit_utilization, late_payments)
+rec_title, rec_bullets, final_rate, final_emi = generate_recommendations(st.session_state.risk_percent / 100, profession, monthly_income, loan_amount, loan_tenure)
 
 with col_bottom1:
     with st.container(border=True):
@@ -321,7 +341,7 @@ with col_bottom2:
                 <div class="info-row"><span>Interest Rate:</span> <span class="info-value">{final_rate:.2f}%</span></div>
                 <div class="info-row"><span>EMI:</span> <span class="info-value">₹{final_emi:,.2f}</span></div>
                 <div class="info-row"><span>Tenure:</span> <span class="info-value">{loan_tenure} Years</span></div>
-                <div class="info-row"><span>Risk Score:</span> <span class="info-value">{st.session_state.prob}%</span></div>
+                <div class="info-row"><span>Risk Score:</span> <span class="info-value">{st.session_state.risk_percent}%</span></div>
             </div>
             <ul style="color: #374151; padding-left: 20px; font-size: 0.95rem; line-height: 1.6; margin-bottom: 0;">
                 {bullets_html}
